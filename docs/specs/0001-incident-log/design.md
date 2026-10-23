@@ -50,7 +50,9 @@ incidents
   resolved_at   timestamptz NULL, CHECK resolved_at >= started_at
   created_at    timestamptz NOT NULL default now()
   updated_at    timestamptz NOT NULL default now()
-  INDEX (status, severity, started_at DESC)              -- APP-5 list filter
+  CHECK (status = 'resolved') = (resolved_at IS NOT NULL)
+  INDEX (started_at DESC, id DESC)                       -- APP-5 keyset pagination
+  INDEX (status, started_at DESC, id DESC)               -- APP-5 status filter
 
 incident_events
   id            uuid        PK
