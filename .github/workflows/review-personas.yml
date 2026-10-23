@@ -20,9 +20,9 @@ jobs:
       contents: read
       pull-requests: write
       id-token: write
-    # Pinned to a commit: upstream has no v1 tag yet, and a SHA can't be moved under us.
-    # scripts/review.sh reads this SHA and aws-region below; keep them on one line each.
-    uses: sre-ai-tools/review-personas/.github/workflows/review.yml@f594d97d67265362a0f29c74ae930ce94cbbf236 # main, 2026-10-22
+    # Pinned to an exact release; bump it deliberately.
+    # scripts/review.sh reads this version and aws-region below; keep them on one line each.
+    uses: sre-ai-tools/review-personas/.github/workflows/review.yml@v1.0.0
     with:
       # A repo variable keeps the AWS account ID out of the repo.
       aws-role-arn: ${{ vars.REVIEWER_ROLE_ARN }}

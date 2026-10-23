@@ -7,16 +7,16 @@
 #
 # Claude mode reviews the branch vs origin/main including uncommitted changes, with no
 # Bedrock cost. Bedrock mode reviews committed work only. Set REVIEW_MODEL to pick the
-# Claude model. The review-personas commit and region are read from the workflow file,
+# Claude model. The review-personas version and region are read from the workflow file,
 # so local runs use the same code as CI.
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 workflow="$root/.github/workflows/review-personas.yml"
 
-sha="$(sed -nE 's#^ *uses: sre-ai-tools/review-personas/\.github/workflows/review\.yml@([0-9a-f]{40}).*#\1#p' "$workflow")"
+ref="$(sed -nE 's#^ *uses: sre-ai-tools/review-personas/\.github/workflows/review\.yml@([0-9a-f]{40}|v[0-9]+(\.[0-9]+\.[0-9]+)?)([^0-9a-zA-Z.].*)?$#\1#p' "$workflow")"
 region="$(sed -nE 's#^ *aws-region: *([a-z0-9-]+).*#\1#p' "$workflow")"
-if [[ -z "$sha" || -z "$region" ]]; then
+if [[ -z "$ref" || -z "$region" ]]; then
   echo "Could not read the review-personas commit or aws-region from $workflow" >&2
   exit 1
 fi
@@ -28,7 +28,7 @@ for arg in "$@"; do
 done
 
 command -v uvx >/dev/null || { echo "Needs uv: brew install uv" >&2; exit 1; }
-rp() { uvx --quiet --from "git+https://github.com/sre-ai-tools/review-personas@$sha" review-personas "$@"; }
+rp() { uvx --quiet --from "git+https://github.com/sre-ai-tools/review-personas@$ref" review-personas "$@"; }
 
 git -C "$root" fetch --quiet origin main
 
