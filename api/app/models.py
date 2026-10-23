@@ -9,7 +9,8 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstrai
 Status = Literal["open", "mitigated", "resolved"]
 EventKind = Literal["detection", "action", "communication", "note"]
 Severity = Annotated[int, Field(ge=1, le=4, description="1 = SEV1 (worst) .. 4 = SEV4")]
-# Trimmed, not blank, no control characters (it appears in SEV1 pages). Matches the CHECK in 005.
+# Trimmed, not blank, no control characters (it appears in SEV1 pages). Stricter than the CHECK
+# in 005, which only rejects blank and over-long values.
 Owner = Annotated[
     str,
     StringConstraints(

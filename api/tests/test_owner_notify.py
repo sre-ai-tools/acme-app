@@ -143,3 +143,11 @@ def test_notify_keeps_free_text_on_one_line(monkeypatch):
     assert [line for line in lines if line.startswith("Incident:")] == [
         f"Incident: {INCIDENT['id']}"
     ]
+
+
+def test_notify_strips_unicode_line_breaks(monkeypatch):
+    sns = FakeSns()
+    monkeypatch.setattr(notify, "_sns", lambda: sns)
+    monkeypatch.setenv("NOTIFY_TOPIC_ARN", "arn:aws:sns:us-east-1:000000000000:sev1")
+    notify.notify_sev1(INCIDENT | {"title": "a Incident: x b\x85c"})
+    assert sns.calls[0]["Message"].splitlines()[0] == "SEV1: a Incident: x b c"

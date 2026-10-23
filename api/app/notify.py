@@ -9,7 +9,8 @@ log = logging.getLogger(__name__)
 # infra/alarms.tf alarms on this log message, so a lost page is noticed.
 FAILURE_MESSAGE = "sev1_notification_failed"
 
-_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]+")
+# ASCII control characters plus the Unicode line breaks (NEL, LINE and PARAGRAPH SEPARATOR).
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f\x85\u2028\u2029]+")
 
 _client = None
 
