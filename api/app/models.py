@@ -54,6 +54,8 @@ class IncidentUpdate(RequestModel):
             raise ValueError("no fields to update")
         if self.status == "resolved" and self.resolved_at is None:
             raise ValueError("resolved_at is required when status is resolved")
+        if self.status in ("open", "mitigated") and self.resolved_at is not None:
+            raise ValueError("resolved_at must be empty unless status is resolved")
         return self
 
 

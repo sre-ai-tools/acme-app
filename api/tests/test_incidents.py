@@ -88,3 +88,27 @@ def test_list_bad_params(client):
     assert client.get("/incidents", params={"status": "closed"}).status_code == 422
     resp = client.get("/incidents", params={"cursor": "garbage"})
     assert resp.status_code == 400 and resp.json()["error"]["code"] == "invalid_cursor"
+
+
+def test_pagination_tie_breaks_on_id(client):
+    for n in range(5):
+        _create(client, f"same{n}", 2, "2026-10-01T00:00:00Z")
+
+    seen, cursor = [], None
+    while True:
+        params = {"limit": 2} | ({"cursor": cursor} if cursor else {})
+        page = client.get("/incidents", params=params).json()
+        seen += [i["id"] for i in page["items"]]
+        if not (cursor := page["next_cursor"]):
+            break
+    assert len(seen) == len(set(seen)) == 5
+    assert seen == sorted(seen, reverse=True)
+
+
+def test_patch_rejects_resolved_at_on_open_status(client, incident):
+    resp = client.patch(
+        f"/incidents/{incident['id']}",
+        json={"status": "mitigated", "resolved_at": "2026-10-01T15:00:00Z"},
+    )
+    assert resp.status_code == 422
+    assert resp.json()["error"]["code"] == "validation_error"
