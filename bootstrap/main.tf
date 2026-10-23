@@ -23,10 +23,11 @@ data "aws_iam_policy_document" "trust" {
     }
 
     # Only pull_request runs of this repo. Forks get no OIDC token.
+    # Immutable IDs in the subject mean a deleted and re-created repo of the same name can't assume the role.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:pull_request"]
+      values   = ["${var.github_oidc_sub_prefix}:pull_request"]
     }
   }
 }
