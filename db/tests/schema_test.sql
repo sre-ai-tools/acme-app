@@ -77,6 +77,15 @@ END;
 $$;
 
 -- Deleting an incident removes its events, postmortem and action items.
+DO $$
+BEGIN
+  IF NOT (EXISTS (SELECT 1 FROM incident_events WHERE incident_id = '00000000-0000-4000-8000-000000000001')
+          AND EXISTS (SELECT 1 FROM postmortems WHERE incident_id = '00000000-0000-4000-8000-000000000001')
+          AND EXISTS (SELECT 1 FROM action_items WHERE incident_id = '00000000-0000-4000-8000-000000000001')) THEN
+    RAISE EXCEPTION 'cascade test needs incident 1 with events, a postmortem and action items: load the seed';
+  END IF;
+END;
+$$;
 DELETE FROM incidents WHERE id = '00000000-0000-4000-8000-000000000001';
 DO $$
 BEGIN
