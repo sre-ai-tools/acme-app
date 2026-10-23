@@ -1,0 +1,29 @@
+# From sre-ai-tools/review-personas examples/caller-workflow.yml.
+name: Review personas
+
+on:
+  # pull_request, never pull_request_target: PR content is untrusted.
+  # PRs from forks get no OIDC token, so they are not reviewed.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  # One review per PR at a time; a new push cancels the older run.
+  group: review-personas-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Skipped until the REVIEWER_ROLE_ARN repo variable is set (bootstrap/ output role_arn).
+    if: ${{ !github.event.pull_request.draft && vars.REVIEWER_ROLE_ARN != '' }}
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    # Pinned to an exact release; bump it deliberately.
+    # scripts/review.sh reads this version and aws-region below; keep them on one line each.
+    uses: sre-ai-tools/review-personas/.github/workflows/review.yml@v1.0.0
+    with:
+      # A repo variable keeps the AWS account ID out of the repo.
+      aws-role-arn: ${{ vars.REVIEWER_ROLE_ARN }}
+      aws-region: us-east-1

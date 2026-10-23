@@ -42,4 +42,4 @@ The point is the **review process**, not the app. The app only needs to be reali
 | Local model | The author's Claude Code model, so local and CI results will differ; the article says so |
 | Personas | The 4 built-ins plus a custom **Security engineer** persona |
 | Staged PR | One PR with deliberately planted flaws, one per persona, **labelled as staged** in the PR and in the article |
-| AWS needed | Only for the reviewer: one IAM role (GitHub OIDC) allowed to call the Bedrock model. Created by hand, not by this repo's Terraform. |
+| AWS needed | Only for the reviewer: one IAM role (GitHub OIDC) allowed to call the Bedrock model. Defined in a separate `bootstrap/` Terraform stack, applied once; the app's Terraform is never applied. |

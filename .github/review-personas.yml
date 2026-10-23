@@ -1,0 +1,13 @@
+# review-personas config. See sre-ai-tools/review-personas examples/review-personas.yml.
+# The model is the built-in default, qwen.qwen3-32b-v1:0.
+
+# Every built-in persona, and every file in .github/review-personas/personas/, runs unless disabled.
+personas:
+  dba:
+    extra_focus: "PostgreSQL 16. Migrations in db/migrations/ run in order against live tables. Flag anything that takes an ACCESS EXCLUSIVE lock."
+  app-developer:
+    extra_focus: "Python 3.12, FastAPI on AWS Lambda via Mangum, psycopg 3 with hand-written SQL."
+  ui-developer:
+    extra_focus: "React 18, Vite, TypeScript. Flag accessibility gaps."
+  aws-architect:
+    extra_focus: "Terraform only. API Gateway HTTP API, Lambda in private subnets, RDS Proxy, RDS Postgres, Cognito, S3 + CloudFront."
