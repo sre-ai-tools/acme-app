@@ -43,6 +43,13 @@ resource "aws_db_parameter_group" "main" {
   }
 }
 
+# RDS would create this on first export with no retention. Slow-query logs can hold query
+# text with personal data, so create it first with a limit.
+resource "aws_cloudwatch_log_group" "postgresql" {
+  name              = "/aws/rds/instance/${local.name}/postgresql"
+  retention_in_days = var.log_retention_days
+}
+
 resource "aws_db_instance" "main" {
   identifier     = local.name
   engine         = "postgres"
@@ -73,6 +80,8 @@ resource "aws_db_instance" "main" {
 
   performance_insights_enabled    = true
   enabled_cloudwatch_logs_exports = ["postgresql"]
+
+  depends_on = [aws_cloudwatch_log_group.postgresql]
 }
 
 # RDS Proxy pools connections from many Lambda environments into a few database sessions.

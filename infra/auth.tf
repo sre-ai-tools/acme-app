@@ -20,7 +20,8 @@ resource "aws_cognito_user_pool" "main" {
     temporary_password_validity_days = 3
   }
 
-  mfa_configuration = "OPTIONAL"
+  # Every user is admin-provisioned staff with write access to incident records.
+  mfa_configuration = "ON"
   software_token_mfa_configuration {
     enabled = true
   }

@@ -47,6 +47,20 @@ data "aws_cloudfront_cache_policy" "optimized" {
   name = "Managed-CachingOptimized"
 }
 
+data "aws_cloudfront_cache_policy" "disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+# Single-page app: paths without a file extension are client-side routes and get the app
+# shell. Only the default behaviour uses this, so a missing /assets/* file stays an error
+# instead of being answered with HTML.
+resource "aws_cloudfront_function" "spa_routes" {
+  name    = "${local.name}-spa-routes"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = file("${path.module}/spa_routes.js")
+}
+
 data "aws_cloudfront_response_headers_policy" "security" {
   name = "Managed-SecurityHeadersPolicy"
 }
@@ -63,7 +77,25 @@ resource "aws_cloudfront_distribution" "ui" {
     origin_access_control_id = aws_cloudfront_origin_access_control.ui.id
   }
 
+  # index.html and other unhashed files: never cached, so a deploy is live at once.
   default_cache_behavior {
+    target_origin_id           = "ui-bucket"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_routes.arn
+    }
+  }
+
+  # Vite's content-hashed build output: safe to cache for as long as CloudFront allows.
+  ordered_cache_behavior {
+    path_pattern               = "/assets/*"
     target_origin_id           = "ui-bucket"
     viewer_protocol_policy     = "redirect-to-https"
     allowed_methods            = ["GET", "HEAD"]
@@ -71,19 +103,6 @@ resource "aws_cloudfront_distribution" "ui" {
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
     response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
-  }
-
-  # Single-page app: client-side routes are served index.html.
-  custom_error_response {
-    error_code         = 403
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
-
-  custom_error_response {
-    error_code         = 404
-    response_code      = 200
-    response_page_path = "/index.html"
   }
 
   restrictions {

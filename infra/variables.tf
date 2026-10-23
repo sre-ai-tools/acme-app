@@ -49,6 +49,13 @@ variable "extra_callback_urls" {
   description = "Extra OAuth callback URLs, e.g. http://localhost:5173/ for local UI development."
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for url in var.extra_callback_urls : can(regex("^(https://[^/]+/|http://localhost(:[0-9]+)?/)", url))
+    ])
+    error_message = "Callback URLs must use https, or http only for localhost, and end the host with /."
+  }
 }
 
 variable "log_retention_days" {
