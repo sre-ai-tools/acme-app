@@ -15,10 +15,22 @@ interface Tokens {
 }
 
 let tokens: Tokens | null = null;
+const expiryListeners = new Set<() => void>();
 
 export function accessToken(): string | null {
   if (!tokens || Date.now() >= tokens.expiresAt) return null;
   return tokens.accessToken;
+}
+
+/** Called when the API rejects the token or it has run out; there is no silent refresh. */
+export function sessionExpired(): void {
+  tokens = null;
+  for (const listener of expiryListeners) listener();
+}
+
+export function onSessionExpired(listener: () => void): () => void {
+  expiryListeners.add(listener);
+  return () => expiryListeners.delete(listener);
 }
 
 export async function signIn(): Promise<void> {
@@ -68,7 +80,8 @@ export async function completeSignIn(url: URL = new URL(window.location.href)): 
   });
   if (!resp.ok) throw new Error(`Sign-in failed: token exchange returned ${resp.status}`);
   const body = (await resp.json()) as { access_token: string; expires_in: number };
-  // Refresh a minute early so a request never goes out with an expiring token.
+  // Treat the token as expired a minute early, so a request never goes out with one about to
+  // lapse. There is no refresh: expiry returns the user to the sign-in screen.
   tokens = { accessToken: body.access_token, expiresAt: Date.now() + (body.expires_in - 60) * 1000 };
 
   // Drop ?code&state from the address bar and history.

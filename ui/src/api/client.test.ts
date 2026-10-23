@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { accessToken } from "../auth/session";
+import { accessToken, sessionExpired } from "../auth/session";
 import { api, ApiError } from "./client";
 
-vi.mock("../auth/session", () => ({ accessToken: vi.fn() }));
+vi.mock("../auth/session", () => ({ accessToken: vi.fn(), sessionExpired: vi.fn() }));
 
 function respond(status: number, body: unknown) {
   return vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -48,5 +48,23 @@ describe("api client", () => {
 
     vi.mocked(accessToken).mockReturnValue(null);
     await expect(api.listIncidents()).rejects.toMatchObject({ status: 401 });
+    expect(sessionExpired).toHaveBeenCalled();
+  });
+
+  it("ends the session when the API rejects the token", async () => {
+    vi.stubGlobal("fetch", respond(401, { message: "Unauthorized" }));
+    await expect(api.listIncidents()).rejects.toMatchObject({ status: 401 });
+    expect(sessionExpired).toHaveBeenCalled();
+  });
+
+  it("calls the same-origin /api path by default", async () => {
+    // VITE_API_URL is set for the other tests; check the fallback directly.
+    const { config } = await import("../config");
+    expect(config.apiUrl).toBe("https://api.test");
+    vi.stubEnv("VITE_API_URL", undefined as unknown as string);
+    vi.resetModules();
+    const fresh = await import("../config");
+    expect(fresh.config.apiUrl).toBe("/api");
+    vi.unstubAllEnvs();
   });
 });

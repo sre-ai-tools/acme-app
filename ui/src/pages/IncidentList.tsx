@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "../api/client";
@@ -6,6 +6,7 @@ import type { Incident, Severity, Status } from "../api/types";
 import { SeverityBadge, STATUS_LABELS, StatusBadge } from "../components/Badges";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { formatUtc } from "../format";
+import { usePageTitle } from "../usePageTitle";
 
 const PAGE_SIZE = 20;
 
@@ -21,19 +22,26 @@ export function IncidentList() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
+  usePageTitle("Incidents");
+
+  // Only the latest request may update the list: a slow response for an old filter or page
+  // must not overwrite or append to newer results.
+  const latestRequest = useRef(0);
 
   const load = useCallback(
     async (after?: string) => {
+      const request = ++latestRequest.current;
       setLoading(true);
       setError(null);
       try {
         const page = await api.listIncidents({ status, severity, cursor: after, limit: PAGE_SIZE });
+        if (request !== latestRequest.current) return;
         setItems((prev) => (after ? [...prev, ...page.items] : page.items));
         setCursor(page.next_cursor);
       } catch (e) {
-        setError(e);
+        if (request === latestRequest.current) setError(e);
       } finally {
-        setLoading(false);
+        if (request === latestRequest.current) setLoading(false);
       }
     },
     [status, severity],

@@ -1,5 +1,5 @@
 output "api_url" {
-  description = "Base URL of the HTTP API."
+  description = "API Gateway URL. The UI uses the same API through CloudFront at /api."
   value       = aws_apigatewayv2_api.main.api_endpoint
 }
 

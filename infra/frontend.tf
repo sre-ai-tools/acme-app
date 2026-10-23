@@ -61,9 +61,44 @@ resource "aws_cloudfront_function" "spa_routes" {
   code    = file("${path.module}/spa_routes.js")
 }
 
+# The API is served from this distribution under /api/*, so the UI and API share an origin:
+# no CORS, and the CSP can say connect-src 'self'. The function strips the /api prefix.
+resource "aws_cloudfront_function" "api_prefix" {
+  name    = "${local.name}-api-prefix"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = file("${path.module}/api_prefix.js")
+}
+
+# Never cache API responses, but forward Authorization: CloudFront only sends it to the origin
+# when it's part of the cache key. A TTL of 0 means nothing is stored anyway.
+resource "aws_cloudfront_cache_policy" "api" {
+  name        = "${local.name}-api"
+  min_ttl     = 0
+  default_ttl = 0
+  max_ttl     = 1
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = ["Authorization"]
+      }
+    }
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+    cookies_config {
+      cookie_behavior = "none"
+    }
+  }
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
 # The managed SecurityHeadersPolicy sets no Content-Security-Policy, so define our own.
-# connect-src names the region's API Gateway domain rather than this API's exact URL: the API's
-# CORS rule already depends on this distribution, and naming it here would make a cycle.
 resource "aws_cloudfront_response_headers_policy" "security" {
   name = "${local.name}-ui-security"
 
@@ -75,7 +110,8 @@ resource "aws_cloudfront_response_headers_policy" "security" {
         "script-src 'self'",
         "style-src 'self'",
         "img-src 'self' data:",
-        "connect-src 'self' https://*.execute-api.${var.aws_region}.amazonaws.com https://${var.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com",
+        # The API is same-origin (/api/*); Cognito is only called for the token exchange.
+        "connect-src 'self' https://${aws_cognito_user_pool_domain.main.domain}.auth.${var.aws_region}.amazoncognito.com",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",
@@ -117,6 +153,18 @@ resource "aws_cloudfront_distribution" "ui" {
     origin_access_control_id = aws_cloudfront_origin_access_control.ui.id
   }
 
+  origin {
+    origin_id   = "api"
+    domain_name = replace(aws_apigatewayv2_api.main.api_endpoint, "https://", "")
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
   # index.html and other unhashed files: never cached, so a deploy is live at once.
   default_cache_behavior {
     target_origin_id           = "ui-bucket"
@@ -143,6 +191,23 @@ resource "aws_cloudfront_distribution" "ui" {
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+  }
+
+  # The API, same-origin. HTTPS only; nothing cached.
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    target_origin_id         = "api"
+    viewer_protocol_policy   = "https-only"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    compress                 = true
+    cache_policy_id          = aws_cloudfront_cache_policy.api.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.api_prefix.arn
+    }
   }
 
   restrictions {

@@ -6,7 +6,8 @@ function required(name: string, value: string | undefined): string {
 }
 
 export const config = {
-  apiUrl: required("VITE_API_URL", import.meta.env.VITE_API_URL),
+  // Same origin by default: CloudFront serves the API at /api/* (infra/frontend.tf).
+  apiUrl: (import.meta.env.VITE_API_URL ?? "/api").replace(/\/$/, ""),
   cognitoDomain: required("VITE_COGNITO_DOMAIN", import.meta.env.VITE_COGNITO_DOMAIN),
   clientId: required("VITE_COGNITO_CLIENT_ID", import.meta.env.VITE_COGNITO_CLIENT_ID),
   // Kept with its trailing slash: it must match the registered callback URL exactly.

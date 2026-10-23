@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
 import type { Incident } from "../api/types";
 import { IncidentDetail } from "./IncidentDetail";
-import { validate } from "./IncidentForm";
+import { IncidentForm, validate } from "./IncidentForm";
 import { IncidentList } from "./IncidentList";
 
 function incident(overrides: Partial<Incident> = {}): Incident {
@@ -70,13 +70,62 @@ describe("IncidentList", () => {
 describe("IncidentForm validation", () => {
   const base = { title: "x", severity: "2", status: "open" as const, startedAt: "2026-10-01T14:00", resolvedAt: "" };
 
-  it("mirrors the API's resolve rules", () => {
+  it("mirrors the API's resolve rules and names the failing field", () => {
     expect(validate(base)).toBeNull();
-    expect(validate({ ...base, title: "  " })).toMatch(/Title is required/);
-    expect(validate({ ...base, status: "resolved" })).toMatch(/need a resolve time/);
-    expect(validate({ ...base, resolvedAt: "2026-10-01T15:00" })).toMatch(/Only resolved incidents/);
-    expect(validate({ ...base, status: "resolved", resolvedAt: "2026-10-01T13:00" })).toMatch(/before the start/);
+    expect(validate({ ...base, title: "  " })).toEqual({ field: "title", message: expect.stringMatching(/Title is required/) });
+    expect(validate({ ...base, startedAt: "" })?.field).toBe("startedAt");
+    expect(validate({ ...base, status: "resolved" })?.message).toMatch(/need a resolve time/);
+    expect(validate({ ...base, resolvedAt: "2026-10-01T15:00" })?.message).toMatch(/Only resolved incidents/);
+    expect(validate({ ...base, status: "resolved", resolvedAt: "2026-10-01T13:00" })).toEqual({
+      field: "resolvedAt",
+      message: expect.stringMatching(/before the start/),
+    });
     expect(validate({ ...base, status: "resolved", resolvedAt: "2026-10-01T15:00" })).toBeNull();
+  });
+
+  it("marks and focuses the failing field, and doesn't call the API", async () => {
+    const create = vi.spyOn(api, "createIncident");
+    renderAt("/incidents/new", "/incidents/new", <IncidentForm />);
+    expect(document.title).toBe("New incident · Incident Log");
+
+    await userEvent.click(screen.getByRole("button", { name: "Create incident" }));
+
+    const title = screen.getByLabelText("Title");
+    expect(title).toHaveAttribute("aria-invalid", "true");
+    expect(title).toHaveAccessibleDescription("Title is required.");
+    expect(title).toHaveFocus();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("shows a loading state, not an empty form, while an incident loads for editing", async () => {
+    let resolve!: (i: Incident) => void;
+    vi.spyOn(api, "getIncident").mockReturnValue(new Promise((r) => (resolve = r)));
+    renderAt("/incidents/i1/edit", "/incidents/:incidentId/edit", <IncidentForm />);
+
+    expect(screen.getByText("Loading incident…")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+
+    resolve(incident());
+    expect(await screen.findByLabelText("Title")).toHaveValue("Checkout API returning 503s");
+  });
+});
+
+describe("IncidentList ordering", () => {
+  it("ignores a slow response for a filter that has since changed", async () => {
+    let resolveFirst!: (p: { items: Incident[]; next_cursor: null }) => void;
+    vi.spyOn(api, "listIncidents")
+      .mockReturnValueOnce(new Promise((r) => (resolveFirst = r)))
+      .mockResolvedValueOnce({ items: [incident({ id: "r1", title: "Resolved one", status: "resolved" })], next_cursor: null });
+
+    renderAt("/incidents", "/incidents", <IncidentList />);
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "resolved");
+    expect(await screen.findByText("Resolved one")).toBeInTheDocument();
+
+    // The first, unfiltered request finishes last; its results must not replace the newer ones.
+    resolveFirst({ items: [incident({ id: "old", title: "Stale result" })], next_cursor: null });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText("Stale result")).not.toBeInTheDocument();
+    expect(screen.getByText("Resolved one")).toBeInTheDocument();
   });
 });
 

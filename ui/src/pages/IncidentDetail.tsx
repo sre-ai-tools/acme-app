@@ -6,6 +6,7 @@ import type { ActionItem, EventKind, Incident, IncidentEvent, Postmortem } from 
 import { SeverityBadge, StatusBadge } from "../components/Badges";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { formatUtc, utcInputToIso } from "../format";
+import { usePageTitle } from "../usePageTitle";
 
 const EVENT_KINDS: EventKind[] = ["detection", "action", "communication", "note"];
 
@@ -13,6 +14,7 @@ export function IncidentDetail() {
   const { incidentId = "" } = useParams();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [error, setError] = useState<unknown>(null);
+  usePageTitle(incident?.title);
 
   useEffect(() => {
     api.getIncident(incidentId).then(setIncident).catch(setError);

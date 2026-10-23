@@ -1,6 +1,6 @@
 // Typed client for the Incident Log API (design D3).
 
-import { accessToken } from "../auth/session";
+import { accessToken, sessionExpired } from "../auth/session";
 import { config } from "../config";
 import type {
   ActionItem,
@@ -27,7 +27,10 @@ export class ApiError extends Error {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = accessToken();
-  if (!token) throw new ApiError(401, "unauthorized", "Your session has expired. Sign in again.");
+  if (!token) {
+    sessionExpired();
+    throw new ApiError(401, "unauthorized", "Your session has expired. Sign in again.");
+  }
 
   let resp: Response;
   try {
@@ -44,6 +47,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   if (resp.ok) return (await resp.json()) as T;
+  if (resp.status === 401) sessionExpired();
   const error = await resp
     .json()
     .then((b: { error?: { code?: string; message?: string } }) => b.error)
