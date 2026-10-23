@@ -65,7 +65,7 @@ variable "log_retention_days" {
 }
 
 variable "sev1_emails" {
-  description = "Email addresses paged when a SEV1 incident is opened or escalated. Optional."
+  description = "Email addresses paged when a SEV1 incident is opened or escalated. Optional, but SEV1 pages go nowhere unless this is set or a pager subscribes to the sev1_topic_arn output."
   type        = list(string)
   default     = []
 }

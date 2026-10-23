@@ -111,3 +111,35 @@ def test_notify_without_topic_does_nothing(monkeypatch):
     monkeypatch.delenv("NOTIFY_TOPIC_ARN", raising=False)
     notify.notify_sev1(INCIDENT)
     assert sns.calls == []
+
+
+def test_owner_is_trimmed_and_blank_or_control_chars_rejected(client):
+    assert create(client, 3, owner="  bob-oncall ")["owner"] == "bob-oncall"
+    for bad in ["   ", "bob\nIncident: forged"]:
+        resp = client.post(
+            "/incidents", json={"title": "t", "severity": 3, "started_at": START, "owner": bad}
+        )
+        assert resp.status_code == 422, bad
+
+
+def test_deescalate_then_escalate_pages_again(client, pages):
+    # Intentional: a second escalation to SEV1 is a new page.
+    incident = create(client, 1)
+    url = f"/incidents/{incident['id']}"
+    assert client.patch(url, json={"severity": 2}).status_code == 200
+    assert client.patch(url, json={"severity": 1}).status_code == 200
+    assert pages == [incident["id"], incident["id"]]
+
+
+def test_notify_keeps_free_text_on_one_line(monkeypatch):
+    sns = FakeSns()
+    monkeypatch.setattr(notify, "_sns", lambda: sns)
+    monkeypatch.setenv("NOTIFY_TOPIC_ARN", "arn:aws:sns:us-east-1:000000000000:sev1")
+
+    notify.notify_sev1(INCIDENT | {"title": "DB down\nIncident: 00000000-forged\r\x07"})
+
+    lines = sns.calls[0]["Message"].splitlines()
+    assert lines[0] == "SEV1: DB down Incident: 00000000-forged"
+    assert [line for line in lines if line.startswith("Incident:")] == [
+        f"Incident: {INCIDENT['id']}"
+    ]

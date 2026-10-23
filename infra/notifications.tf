@@ -134,6 +134,20 @@ resource "aws_vpc_endpoint" "sns" {
   subnet_ids          = aws_subnet.private[*].id
   security_group_ids  = [aws_security_group.endpoints.id]
   private_dns_enabled = true
+  policy              = data.aws_iam_policy_document.sns_endpoint.json
 
   tags = { Name = "${local.name}-sns" }
+}
+
+# Only this account's topics are reachable through the endpoint, so it can't be used to send
+# data to a topic in another account.
+data "aws_iam_policy_document" "sns_endpoint" {
+  statement {
+    actions   = ["sns:Publish"]
+    resources = ["arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
 }

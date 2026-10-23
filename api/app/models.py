@@ -4,11 +4,18 @@ from datetime import date, datetime
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Status = Literal["open", "mitigated", "resolved"]
 EventKind = Literal["detection", "action", "communication", "note"]
 Severity = Annotated[int, Field(ge=1, le=4, description="1 = SEV1 (worst) .. 4 = SEV4")]
+# Trimmed, not blank, no control characters (it appears in SEV1 pages). Matches the CHECK in 005.
+Owner = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=200, pattern=r"^[^\x00-\x1f\x7f]*$"
+    ),
+]
 
 
 class RequestModel(BaseModel):
@@ -30,7 +37,7 @@ class IncidentCreate(RequestModel):
     status: Status = "open"
     started_at: AwareDatetime
     resolved_at: AwareDatetime | None = None
-    owner: str | None = Field(default=None, min_length=1, max_length=200)
+    owner: Owner | None = None
 
     @model_validator(mode="after")
     def check_resolution(self) -> Self:
@@ -47,7 +54,7 @@ class IncidentUpdate(RequestModel):
     status: Status | None = None
     started_at: AwareDatetime | None = None
     resolved_at: AwareDatetime | None = None
-    owner: str | None = Field(default=None, min_length=1, max_length=200)
+    owner: Owner | None = None
 
     @model_validator(mode="after")
     def check_fields(self) -> Self:
