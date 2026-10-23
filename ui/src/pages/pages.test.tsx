@@ -17,6 +17,7 @@ function incident(overrides: Partial<Incident> = {}): Incident {
     status: "open",
     started_at: "2026-10-01T14:02:00Z",
     resolved_at: null,
+    owner: null,
     created_at: "2026-10-01T14:03:00Z",
     updated_at: "2026-10-01T14:03:00Z",
     ...overrides,
@@ -46,6 +47,7 @@ describe("IncidentList", () => {
     const row = await screen.findByRole("row", { name: /Checkout API/ });
     expect(within(row).getByText("SEV1")).toBeInTheDocument();
     expect(within(row).getByText("Open")).toBeInTheDocument();
+    expect(within(row).getByText("Unassigned")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Load more" }));
     expect(await screen.findByText("Search slow")).toBeInTheDocument();
@@ -68,7 +70,7 @@ describe("IncidentList", () => {
 });
 
 describe("IncidentForm validation", () => {
-  const base = { title: "x", severity: "2", status: "open" as const, startedAt: "2026-10-01T14:00", resolvedAt: "" };
+  const base = { title: "x", severity: "2", status: "open" as const, startedAt: "2026-10-01T14:00", resolvedAt: "", owner: "" };
 
   it("mirrors the API's resolve rules and names the failing field", () => {
     expect(validate(base)).toBeNull();
@@ -176,5 +178,28 @@ describe("IncidentDetail", () => {
     await userEvent.keyboard(" ");
     expect(update).toHaveBeenCalledWith("a1", { done: true });
     await waitFor(() => expect(screen.getByRole("checkbox", { name: "Add alarm" })).toBeChecked());
+  });
+});
+
+describe("IncidentForm owner", () => {
+  it("sends a blank owner as unassigned and a filled one trimmed", async () => {
+    const create = vi.spyOn(api, "createIncident").mockResolvedValue(incident({ id: "new" }));
+    renderAt("/incidents/new", "/incidents/new", <IncidentForm />);
+
+    await userEvent.type(screen.getByLabelText("Title"), "Search down");
+    await userEvent.type(screen.getByLabelText("Started (UTC)"), "2026-10-01T14:00");
+    await userEvent.click(screen.getByRole("button", { name: "Create incident" }));
+    expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ owner: null }));
+  });
+
+  it("trims the owner", async () => {
+    const create = vi.spyOn(api, "createIncident").mockResolvedValue(incident({ id: "new" }));
+    renderAt("/incidents/new", "/incidents/new", <IncidentForm />);
+
+    await userEvent.type(screen.getByLabelText("Title"), "Search down");
+    await userEvent.type(screen.getByLabelText("On-call owner"), "  bob-oncall ");
+    await userEvent.type(screen.getByLabelText("Started (UTC)"), "2026-10-01T14:00");
+    await userEvent.click(screen.getByRole("button", { name: "Create incident" }));
+    expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ owner: "bob-oncall" }));
   });
 });

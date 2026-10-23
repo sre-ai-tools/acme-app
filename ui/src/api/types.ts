@@ -11,6 +11,7 @@ export interface Incident {
   status: Status;
   started_at: string;
   resolved_at: string | null;
+  owner: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +27,7 @@ export interface IncidentInput {
   status: Status;
   started_at: string;
   resolved_at: string | null;
+  owner: string | null;
 }
 
 export interface IncidentEvent {

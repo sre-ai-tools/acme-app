@@ -12,7 +12,7 @@
 - **APP-4 Must.** A user can add action items to an incident, each with a description, owner, due date and done flag.
 - **APP-5 Must.** The incident list can be filtered by status and severity, and is paginated.
 - **APP-6 Must.** Only signed-in users can use the API and UI.
-- **APP-7 Should.** An incident has an on-call owner, and creating a SEV1 incident sends a notification. _(Delivered by the cross-cutting PR in [plan.md](plan.md).)_
+- **APP-7 Should.** An incident has an on-call owner, and creating a SEV1 incident sends a notification. _(Delivered by PR 5 in [plan.md](plan.md): escalation to SEV1 also notifies.)_
 
 ## Code realism
 

@@ -48,6 +48,19 @@ data "aws_iam_policy_document" "lambda" {
     resources = [aws_secretsmanager_secret.db.arn]
   }
 
+  statement {
+    sid       = "PublishSev1"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.sev1.arn]
+  }
+
+  # The topic is encrypted with a customer managed key; publishing needs a data key.
+  statement {
+    sid       = "UseSnsKey"
+    actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
+    resources = [aws_kms_key.sns.arn]
+  }
+
   # ENI management for VPC access. These actions don't support resource-level permissions.
   statement {
     sid = "VpcAccess"
@@ -93,9 +106,10 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      DB_HOST       = aws_db_proxy.main.endpoint
-      DB_NAME       = aws_db_instance.main.db_name
-      DB_SECRET_ARN = aws_secretsmanager_secret.db.arn
+      DB_HOST          = aws_db_proxy.main.endpoint
+      DB_NAME          = aws_db_instance.main.db_name
+      DB_SECRET_ARN    = aws_secretsmanager_secret.db.arn
+      NOTIFY_TOPIC_ARN = aws_sns_topic.sev1.arn
     }
   }
 

@@ -63,3 +63,15 @@ variable "log_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "sev1_emails" {
+  description = "Email addresses paged when a SEV1 incident is opened or escalated. Optional."
+  type        = list(string)
+  default     = []
+}
+
+variable "alarm_emails" {
+  description = "Email addresses for operational alarms. Optional."
+  type        = list(string)
+  default     = []
+}

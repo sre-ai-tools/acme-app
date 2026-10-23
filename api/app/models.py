@@ -30,6 +30,7 @@ class IncidentCreate(RequestModel):
     status: Status = "open"
     started_at: AwareDatetime
     resolved_at: AwareDatetime | None = None
+    owner: str | None = Field(default=None, min_length=1, max_length=200)
 
     @model_validator(mode="after")
     def check_resolution(self) -> Self:
@@ -46,10 +47,12 @@ class IncidentUpdate(RequestModel):
     status: Status | None = None
     started_at: AwareDatetime | None = None
     resolved_at: AwareDatetime | None = None
+    owner: str | None = Field(default=None, min_length=1, max_length=200)
 
     @model_validator(mode="after")
     def check_fields(self) -> Self:
-        _reject_nulls(self, nullable={"resolved_at"})
+        # null resolved_at reopens; null owner unassigns.
+        _reject_nulls(self, nullable={"resolved_at", "owner"})
         if not self.model_fields_set:
             raise ValueError("no fields to update")
         if self.status == "resolved" and self.resolved_at is None:
@@ -66,6 +69,7 @@ class Incident(BaseModel):
     status: Status
     started_at: datetime
     resolved_at: datetime | None
+    owner: str | None
     created_at: datetime
     updated_at: datetime
 

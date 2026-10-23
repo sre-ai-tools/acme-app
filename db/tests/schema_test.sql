@@ -59,6 +59,8 @@ SELECT pg_temp.assert_rejects($$INSERT INTO postmortems (incident_id, summary, i
                                 VALUES ('00000000-0000-4000-8000-000000000001', 'a', 'b', 'c')$$, '23505');
 SELECT pg_temp.assert_rejects($$INSERT INTO action_items (incident_id, description, owner)
                                 VALUES ('00000000-0000-4000-8000-000000000001', 'x', '')$$, '23514');
+SELECT pg_temp.assert_rejects($$INSERT INTO incidents (title, severity, started_at, owner)
+                                VALUES ('x', 1, now(), '')$$, '23514');
 
 -- updated_at triggers overwrite any value with the transaction time on update.
 DO $$

@@ -29,3 +29,12 @@ output "cognito_domain" {
 output "db_proxy_endpoint" {
   value = aws_db_proxy.main.endpoint
 }
+
+output "sev1_topic_arn" {
+  description = "SNS topic for SEV1 pages; subscribe a pager integration here."
+  value       = aws_sns_topic.sev1.arn
+}
+
+output "alarms_topic_arn" {
+  value = aws_sns_topic.alarms.arn
+}
