@@ -35,4 +35,4 @@
 - **REPO-1 Must.** One directory per layer: `infra/`, `api/`, `ui/`, `db/`.
 - **REPO-2 Must.** Each PR in [plan.md](plan.md) is a separate branch and PR against `main`, merged in order.
 - **REPO-3 Must.** No build, test or deploy workflows. The only workflow is review-personas.
-- **REPO-4 Must.** No real credentials, account IDs or ARNs in the repo, except the reviewer role ARN in the workflow file.
+- **REPO-4 Must.** No real credentials, account IDs or ARNs in the repo. The reviewer role ARN lives in the `REVIEWER_ROLE_ARN` repo variable.

@@ -130,7 +130,7 @@ The **reviewer's IAM role is not in this Terraform.** It must exist before the f
 
 | File | Purpose |
 |---|---|
-| `.github/workflows/review-personas.yml` | From review-personas `examples/caller-workflow.yml`, pinned `@v1`, with the author's role ARN and region |
+| `.github/workflows/review-personas.yml` | From review-personas `examples/caller-workflow.yml`, pinned to an upstream commit SHA (no release tags exist yet); role ARN from the `REVIEWER_ROLE_ARN` repo variable, job skipped when unset |
 | `.github/review-personas.yml` | Config: all built-ins enabled, extra focus per persona (e.g. DBA: "Postgres 16, migrations run against a live table"), no model override |
 | `.github/review-personas/personas/security.md` | Custom **Security engineer** persona, from review-personas `examples/security.md` |
 

@@ -14,14 +14,15 @@ concurrency:
 
 jobs:
   review:
-    if: ${{ !github.event.pull_request.draft }}
+    # Skipped until the REVIEWER_ROLE_ARN repo variable is set (bootstrap/ output role_arn).
+    if: ${{ !github.event.pull_request.draft && vars.REVIEWER_ROLE_ARN != '' }}
     permissions:
       contents: read
       pull-requests: write
       id-token: write
-    uses: sre-ai-tools/review-personas/.github/workflows/review.yml@v1
+    # Pinned to a commit: upstream has no v1 tag yet, and a SHA can't be moved under us.
+    uses: sre-ai-tools/review-personas/.github/workflows/review.yml@f594d97d67265362a0f29c74ae930ce94cbbf236 # main, 2026-10-22
     with:
-      # Placeholder: replace with the reviewer role created by hand (see docs/specs/0001-incident-log/plan.md).
-      # Until then this check fails on AWS auth.
-      aws-role-arn: arn:aws:iam::000000000000:role/github-review-personas
+      # A repo variable keeps the AWS account ID out of the repo.
+      aws-role-arn: ${{ vars.REVIEWER_ROLE_ARN }}
       aws-region: us-east-1

@@ -5,7 +5,7 @@
 ## Prerequisites (by hand, once)
 
 1. Push this repo to GitHub.
-2. In AWS: enable Qwen3 32B in Bedrock for the chosen region, then `terraform apply` in `bootstrap/` to create the reviewer role, and put its `role_arn` output in the workflow. Add a CloudWatch alarm on Bedrock spend.
+2. In AWS: enable Qwen3 32B in Bedrock for the chosen region, then `terraform apply` in `bootstrap/` to create the reviewer role, and set its `role_arn` output as the `REVIEWER_ROLE_ARN` repo variable (`gh variable set`). Add a CloudWatch alarm on Bedrock spend.
 3. In Claude Code: `/plugin marketplace add sre-ai-tools/review-personas`, then `/plugin install prpanel@review-personas`.
 
 ## PR sequence
