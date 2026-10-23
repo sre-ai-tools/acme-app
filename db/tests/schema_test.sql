@@ -13,7 +13,9 @@ CREATE TEMP TABLE seed_counts AS
          (SELECT count(*) FROM incident_events) AS events,
          (SELECT count(*) FROM postmortems) AS postmortems,
          (SELECT count(*) FROM action_items) AS action_items;
+SET app.allow_seed = 'on';
 \ir ../seed/dev_seed.sql
+RESET app.allow_seed;
 DO $$
 BEGIN
   IF (SELECT row(s.*) FROM seed_counts s) IS DISTINCT FROM

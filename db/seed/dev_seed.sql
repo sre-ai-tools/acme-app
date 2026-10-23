@@ -1,6 +1,18 @@
 -- Development seed data for demos and screenshots. Never run against production.
 -- Fixed ids make it safe to re-run: existing rows are left alone.
+--
+-- Refuses to run unless the session opts in:
+--   PGOPTIONS='-c app.allow_seed=on' psql -f db/seed/dev_seed.sql
 BEGIN;
+
+-- Inside the transaction, so a refusal aborts every insert below even without ON_ERROR_STOP.
+DO $$
+BEGIN
+  IF current_setting('app.allow_seed', true) IS DISTINCT FROM 'on' THEN
+    RAISE EXCEPTION 'dev_seed.sql refused: set app.allow_seed=on to load demo data (never in production)';
+  END IF;
+END;
+$$;
 
 INSERT INTO incidents (id, title, severity, status, started_at, resolved_at) VALUES
   ('00000000-0000-4000-8000-000000000001', 'Checkout API returning 503s',            1, 'resolved',  '2026-10-01 14:02+00', '2026-10-01 15:10+00'),
