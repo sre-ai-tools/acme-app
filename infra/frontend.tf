@@ -61,8 +61,48 @@ resource "aws_cloudfront_function" "spa_routes" {
   code    = file("${path.module}/spa_routes.js")
 }
 
-data "aws_cloudfront_response_headers_policy" "security" {
-  name = "Managed-SecurityHeadersPolicy"
+# The managed SecurityHeadersPolicy sets no Content-Security-Policy, so define our own.
+# connect-src names the region's API Gateway domain rather than this API's exact URL: the API's
+# CORS rule already depends on this distribution, and naming it here would make a cycle.
+resource "aws_cloudfront_response_headers_policy" "security" {
+  name = "${local.name}-ui-security"
+
+  security_headers_config {
+    content_security_policy {
+      override = true
+      content_security_policy = join("; ", [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "connect-src 'self' https://*.execute-api.${var.aws_region}.amazonaws.com https://${var.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+      ])
+    }
+
+    strict_transport_security {
+      override                   = true
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      override     = true
+      frame_option = "DENY"
+    }
+
+    referrer_policy {
+      override        = true
+      referrer_policy = "strict-origin-when-cross-origin"
+    }
+  }
 }
 
 resource "aws_cloudfront_distribution" "ui" {
@@ -85,7 +125,7 @@ resource "aws_cloudfront_distribution" "ui" {
     cached_methods             = ["GET", "HEAD"]
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
-    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
 
     function_association {
       event_type   = "viewer-request"
@@ -102,7 +142,7 @@ resource "aws_cloudfront_distribution" "ui" {
     cached_methods             = ["GET", "HEAD"]
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
-    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
   }
 
   restrictions {
