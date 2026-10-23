@@ -19,9 +19,9 @@
 
 ```
  Browser ──▶ CloudFront ──▶ S3 (UI static files)
-    │
-    │  JWT (Cognito)
-    ▼
+                │
+                │  /api/*  (same origin; JWT from Cognito)
+                ▼
  API Gateway (HTTP API, JWT authorizer)
     │
     ▼
@@ -33,6 +33,7 @@
 - Lambda and RDS run in private subnets with no NAT gateway; Lambda reaches Secrets Manager through an interface VPC endpoint.
 - RDS Proxy pools connections so Lambda concurrency doesn't exhaust Postgres.
 - Cognito user pool + hosted UI handles sign-in [APP-6]; API Gateway's JWT authorizer rejects unauthenticated calls before Lambda runs.
+- CloudFront serves the API at `/api/*`, so the UI and API share an origin: no CORS, and the Content-Security-Policy allows `connect-src 'self'` plus the Cognito domain only.
 
 **Why Lambda.** It's a demo that will never be deployed. Lambda keeps the Terraform small while still giving the AWS architect persona real topics: VPC placement, IAM scope, connection pooling, timeouts.
 

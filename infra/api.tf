@@ -112,13 +112,7 @@ resource "aws_lambda_function" "api" {
 resource "aws_apigatewayv2_api" "main" {
   name          = local.name
   protocol_type = "HTTP"
-
-  cors_configuration {
-    allow_origins = ["https://${aws_cloudfront_distribution.ui.domain_name}"]
-    allow_methods = ["GET", "POST", "PATCH", "PUT"]
-    allow_headers = ["authorization", "content-type"]
-    max_age       = 3600
-  }
+  # No CORS: the UI calls the API same-origin through CloudFront at /api/* (frontend.tf).
 }
 
 resource "aws_apigatewayv2_authorizer" "cognito" {
