@@ -124,7 +124,7 @@ Layout under `infra/`:
 
 The Lambda package path points at a zip that is never built; that is acceptable because nothing is applied [REAL-3].
 
-The **reviewer's IAM role is not in this Terraform.** It must exist before the first PR is reviewed, and this Terraform is never applied, so the author creates it by hand from the review-personas README.
+The **reviewer's IAM role is not in this Terraform.** It must exist before the first PR is reviewed, and this Terraform is never applied. It lives in a separate stack, `bootstrap/`, that the author applies once with local state: one role trusted only by this repo's `pull_request` runs, allowed only `bedrock:InvokeModel` on the CI model. The account's existing GitHub OIDC provider is looked up, not created.
 
 ## D6. Review setup
 

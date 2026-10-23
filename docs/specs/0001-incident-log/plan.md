@@ -5,7 +5,7 @@
 ## Prerequisites (by hand, once)
 
 1. Push this repo to GitHub.
-2. In AWS: enable Qwen3 32B in Bedrock for the chosen region, then create the GitHub OIDC role scoped to this repo with only `bedrock:InvokeModel` on `qwen.qwen3-32b-v1:0` (review-personas README, step 1). Add a CloudWatch alarm on Bedrock spend.
+2. In AWS: enable Qwen3 32B in Bedrock for the chosen region, then `terraform apply` in `bootstrap/` to create the reviewer role, and put its `role_arn` output in the workflow. Add a CloudWatch alarm on Bedrock spend.
 3. In Claude Code: `/plugin marketplace add sre-ai-tools/review-personas`, then `/plugin install prpanel@review-personas`.
 
 ## PR sequence
@@ -14,7 +14,7 @@ Each PR: build on a branch → `/prpanel:review` locally → save the output →
 
 | PR | Branch | Contents | Expect relevant |
 |---|---|---|---|
-| 0 | `chore/review-panel` | Workflow, config and Security persona (D6). The panel reviews its own setup. | AWS architect, Security |
+| 0 | `chore/review-panel` | Workflow, config, Security persona (D6) and the `bootstrap/` reviewer role. The panel reviews its own setup. | AWS architect, Security |
 | 1 | `feat/db-schema` | `db/migrations/001–004`, seed data (D2) | DBA; UI "not relevant" |
 | 2 | `feat/api` | FastAPI app, routes, tests (D3) | App developer, Security, DBA (queries) |
 | 3 | `feat/infra` | Terraform (D5) | AWS architect, Security |
