@@ -6,6 +6,7 @@ import { ErrorMessage } from "./components/ErrorMessage";
 import { IncidentDetail } from "./pages/IncidentDetail";
 import { IncidentForm } from "./pages/IncidentForm";
 import { IncidentList } from "./pages/IncidentList";
+import { SearchResults } from "./pages/SearchResults";
 
 type AuthState = "checking" | "signed-in" | "signed-out";
 
@@ -91,6 +92,7 @@ function SignedInApp() {
           <Route path="/incidents/new" element={<IncidentForm />} />
           <Route path="/incidents/:incidentId" element={<IncidentDetail />} />
           <Route path="/incidents/:incidentId/edit" element={<IncidentForm />} />
+          <Route path="/search" element={<SearchResults />} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>
       </main>

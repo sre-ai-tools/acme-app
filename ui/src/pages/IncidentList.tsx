@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { Incident, Severity, Status } from "../api/types";
 import { SeverityBadge, STATUS_LABELS, StatusBadge } from "../components/Badges";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { SearchBar } from "../components/SearchBar";
 import { formatUtc } from "../format";
 import { usePageTitle } from "../usePageTitle";
 
@@ -62,6 +63,7 @@ export function IncidentList() {
     <section aria-labelledby="incidents-heading">
       <div className="page-header">
         <h1 id="incidents-heading">Incidents</h1>
+        <SearchBar />
         <Link className="button" to="/incidents/new">
           New incident
         </Link>

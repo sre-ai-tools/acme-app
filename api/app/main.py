@@ -7,7 +7,7 @@ from mangum import Mangum
 
 from .auth import current_user
 from .errors import register_error_handlers
-from .routes import action_items, events, incidents, postmortems
+from .routes import action_items, events, incidents, postmortems, search
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +17,7 @@ app = FastAPI(
 )
 register_error_handlers(app)
 
-for module in (incidents, events, postmortems, action_items):
+for module in (incidents, events, postmortems, action_items, search):
     app.include_router(module.router, dependencies=[Depends(current_user)])
 
 handler = Mangum(app, lifespan="off")

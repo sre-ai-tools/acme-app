@@ -15,6 +15,7 @@ locals {
     "GET /incidents/{incident_id}/action-items",
     "POST /incidents/{incident_id}/action-items",
     "PATCH /action-items/{item_id}",
+    "GET /search",
   ])
 }
 
@@ -59,6 +60,12 @@ data "aws_iam_policy_document" "lambda" {
     sid       = "UseSnsKey"
     actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
     resources = [aws_kms_key.sns.arn]
+  }
+
+  statement {
+    sid       = "Search"
+    actions   = ["*"]
+    resources = ["*"]
   }
 
   # ENI management for VPC access. These actions don't support resource-level permissions.
