@@ -14,6 +14,7 @@ interface FormState {
   status: Status;
   startedAt: string;
   resolvedAt: string;
+  owner: string;
 }
 
 type Field = keyof FormState;
@@ -23,7 +24,14 @@ export interface Problem {
   message: string;
 }
 
-const EMPTY: FormState = { title: "", severity: "3", status: "open", startedAt: "", resolvedAt: "" };
+const EMPTY: FormState = {
+  title: "",
+  severity: "3",
+  status: "open",
+  startedAt: "",
+  resolvedAt: "",
+  owner: "",
+};
 const ERROR_ID = "incident-form-error";
 
 /** Same rules as the API and the table constraints, checked before submitting. */
@@ -31,6 +39,8 @@ export function validate(form: FormState): Problem | null {
   if (!form.title.trim()) return { field: "title", message: "Title is required." };
   if (form.title.length > 200)
     return { field: "title", message: "Title must be 200 characters or fewer." };
+  if (form.owner.trim().length > 200)
+    return { field: "owner", message: "Owner must be 200 characters or fewer." };
   if (!form.startedAt) return { field: "startedAt", message: "Start time is required." };
   if (form.status === "resolved" && !form.resolvedAt)
     return { field: "resolvedAt", message: "Resolved incidents need a resolve time." };
@@ -51,6 +61,8 @@ function toInput(form: FormState): IncidentInput {
     status: form.status,
     started_at: utcInputToIso(form.startedAt),
     resolved_at: form.resolvedAt ? utcInputToIso(form.resolvedAt) : null,
+    // Blank means unassigned.
+    owner: form.owner.trim() || null,
   };
 }
 
@@ -75,6 +87,7 @@ export function IncidentForm() {
           status: i.status,
           startedAt: isoToUtcInput(i.started_at),
           resolvedAt: i.resolved_at ? isoToUtcInput(i.resolved_at) : "",
+          owner: i.owner ?? "",
         }),
       )
       .catch(setError);
@@ -153,6 +166,17 @@ export function IncidentForm() {
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          On-call owner
+          <input
+            id="incident-owner"
+            value={form.owner}
+            onChange={(e) => update("owner", e.target.value)}
+            maxLength={200}
+            placeholder="Unassigned"
+            {...invalidProps("owner")}
+          />
         </label>
         <label>
           Started (UTC)

@@ -33,7 +33,8 @@ export function IncidentDetail() {
       </div>
       <p className="meta">
         <SeverityBadge severity={incident.severity} /> <StatusBadge status={incident.status} />{" "}
-        Started {formatUtc(incident.started_at)}
+        Owner {incident.owner ?? <span className="meta">Unassigned</span>} · Started{" "}
+        {formatUtc(incident.started_at)}
         {incident.resolved_at && <> · Resolved {formatUtc(incident.resolved_at)}</>}
       </p>
 

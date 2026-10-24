@@ -49,6 +49,7 @@ incidents
   status        text        NOT NULL, CHECK IN ('open','mitigated','resolved')
   started_at    timestamptz NOT NULL
   resolved_at   timestamptz NULL, CHECK resolved_at >= started_at
+  owner         text        NULL, CHECK length 1..200     -- 005, APP-7 on-call owner
   created_at    timestamptz NOT NULL default now()
   updated_at    timestamptz NOT NULL default now()
   CHECK (status = 'resolved') = (resolved_at IS NOT NULL)
@@ -97,6 +98,8 @@ Layout: `api/app/{main.py, db.py, models.py, routes/*.py}`, `api/tests/`, `api/p
 | GET / PUT | `/incidents/{id}/postmortem` | PUT upserts [APP-3] |
 | GET / POST | `/incidents/{id}/action-items` | [APP-4] |
 | PATCH | `/action-items/{id}` | Toggle `done`, edit fields |
+
+Creating a SEV1 incident, or escalating one to SEV1, publishes to the SEV1 SNS topic after the write. Best effort: a failed publish is logged, and a CloudWatch alarm watches for that log line [APP-7].
 
 - Pydantic models validate every request; errors use one JSON shape: `{"error": {"code", "message"}}`.
 - All SQL is parameterised. One connection per invocation, reused across warm starts.

@@ -105,6 +105,7 @@ export function IncidentList() {
               <th scope="col">Severity</th>
               <th scope="col">Title</th>
               <th scope="col">Status</th>
+              <th scope="col">Owner</th>
               <th scope="col">Started</th>
             </tr>
           </thead>
@@ -120,6 +121,7 @@ export function IncidentList() {
                 <td>
                   <StatusBadge status={incident.status} />
                 </td>
+                <td>{incident.owner ?? <span className="meta">Unassigned</span>}</td>
                 <td>{formatUtc(incident.started_at)}</td>
               </tr>
             ))}

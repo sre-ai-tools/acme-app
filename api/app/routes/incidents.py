@@ -7,12 +7,13 @@ from psycopg import sql
 from ..db import get_conn
 from ..errors import not_found
 from ..models import Incident, IncidentCreate, IncidentPage, IncidentUpdate, Status
+from ..notify import notify_sev1
 from ..pagination import decode_cursor, encode_cursor
 from . import update_row
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
-COLUMNS = "id, title, severity, status, started_at, resolved_at, created_at, updated_at"
+COLUMNS = "id, title, severity, status, started_at, resolved_at, owner, created_at, updated_at"
 
 
 @router.get("", response_model=IncidentPage)
@@ -52,14 +53,18 @@ def list_incidents(
 
 @router.post("", response_model=Incident, status_code=status.HTTP_201_CREATED)
 def create_incident(body: IncidentCreate, conn: psycopg.Connection = Depends(get_conn)):
-    return conn.execute(
+    row = conn.execute(
         f"""
-        INSERT INTO incidents (title, severity, status, started_at, resolved_at)
-        VALUES (%(title)s, %(severity)s, %(status)s, %(started_at)s, %(resolved_at)s)
+        INSERT INTO incidents (title, severity, status, started_at, resolved_at, owner)
+        VALUES (%(title)s, %(severity)s, %(status)s, %(started_at)s, %(resolved_at)s, %(owner)s)
         RETURNING {COLUMNS}
         """,
         body.model_dump(),
     ).fetchone()
+    # After the insert has committed (autocommit), so a page never points at a missing row.
+    if row["severity"] == 1:
+        notify_sev1(row)
+    return row
 
 
 @router.get("/{incident_id}", response_model=Incident)
@@ -78,7 +83,17 @@ def update_incident(
     # Reopening or mitigating clears the resolve time, which the table requires.
     if changes.get("status") in ("open", "mitigated"):
         changes.setdefault("resolved_at", None)
-    row = update_row(conn, "incidents", "id", incident_id, changes, COLUMNS)
-    if row is None:
-        raise not_found("Incident")
+
+    # Lock the row to read its severity before the update, so two concurrent escalations
+    # to SEV1 send one notification, not two.
+    with conn.transaction():
+        before = conn.execute(
+            "SELECT severity FROM incidents WHERE id = %s FOR UPDATE", (incident_id,)
+        ).fetchone()
+        if before is None:
+            raise not_found("Incident")
+        row = update_row(conn, "incidents", "id", incident_id, changes, COLUMNS)
+
+    if row["severity"] == 1 and before["severity"] != 1:
+        notify_sev1(row)
     return row

@@ -78,7 +78,7 @@ def test_incident_create_rejects_naive_datetimes_and_unknown_fields():
     with pytest.raises(ValidationError):
         IncidentCreate(title="x", severity=2, started_at="2026-10-01T14:00:00")
     with pytest.raises(ValidationError):
-        IncidentCreate(title="x", severity=2, started_at="2026-10-01T14:00:00Z", owner="me")
+        IncidentCreate(title="x", severity=2, started_at="2026-10-01T14:00:00Z", assignee="me")
 
 
 def test_updates_reject_empty_and_nulls():
