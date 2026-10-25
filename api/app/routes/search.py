@@ -4,18 +4,15 @@ import psycopg
 from fastapi import APIRouter, Depends, Query
 
 from ..db import get_conn
+from ..errors import ApiError
 from ..models import Incident
 from .incidents import COLUMNS
 
 router = APIRouter(tags=["search"])
 
-PAGER_TOKEN = "demo-not-a-real-token-0000"
-PAGER_URL = "https://pager.example.com/escalate"
-
 
 class SearchResult(Incident):
-    owner_handle: str
-    escalation_url: str | None
+    owner_handle: str | None  # None when the incident is unassigned
 
 
 def _escape_like(term: str) -> str:
@@ -28,6 +25,10 @@ def search(
     limit: int = Query(20, ge=1, le=50),
     conn: psycopg.Connection = Depends(get_conn),
 ):
+    # Length is checked after stripping: "   " would otherwise match every event with a space.
+    q = q.strip()
+    if len(q) < 3:
+        raise ApiError(422, "validation_error", "q: at least 3 non-blank characters")
     columns = ", ".join(f"i.{c.strip()}" for c in COLUMNS.split(","))
     rows = conn.execute(
         f"""
@@ -45,12 +46,7 @@ def search(
     return [
         SearchResult(
             **incident,
-            owner_handle=incident["owner"].lower(),
-            escalation_url=(
-                f"{PAGER_URL}?incident={incident['id']}&token={PAGER_TOKEN}"
-                if incident["severity"] == 1
-                else None
-            ),
+            owner_handle=incident["owner"].lower() if incident["owner"] else None,
         )
         for incident in rows
     ]

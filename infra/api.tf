@@ -62,12 +62,6 @@ data "aws_iam_policy_document" "lambda" {
     resources = [aws_kms_key.sns.arn]
   }
 
-  statement {
-    sid       = "Search"
-    actions   = ["*"]
-    resources = ["*"]
-  }
-
   # ENI management for VPC access. These actions don't support resource-level permissions.
   statement {
     sid = "VpcAccess"

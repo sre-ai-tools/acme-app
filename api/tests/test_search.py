@@ -20,7 +20,6 @@ def test_search_matches_event_text(client):
     results = client.get("/search", params={"q": "pool"}).json()
     assert [r["id"] for r in results] == [hit["id"]]
     assert results[0]["owner_handle"] == "alice"
-    assert results[0]["escalation_url"].startswith("https://pager.example.com/")
 
 
 def test_search_treats_wildcards_literally(client):
@@ -31,3 +30,25 @@ def test_search_treats_wildcards_literally(client):
 
 def test_search_rejects_short_queries(client):
     assert client.get("/search", params={"q": "ab"}).status_code == 422
+
+
+def test_search_handles_unassigned_incidents(client):
+    hit = make(client, "Unassigned", None, "disk full on db-1")
+    results = client.get("/search", params={"q": "disk full"})
+    assert results.status_code == 200
+    assert [(r["id"], r["owner_handle"]) for r in results.json()] == [(hit["id"], None)]
+
+
+def test_search_results_carry_no_credentials(client):
+    make(client, "Checkout", "Alice", "connection pool exhausted", severity=1)
+    resp = client.get("/search", params={"q": "pool"})
+    assert resp.status_code == 200
+    assert "escalation_url" not in resp.json()[0]
+    assert "token" not in resp.text.lower()
+
+
+def test_search_rejects_blank_queries(client):
+    make(client, "Spaces", "Alice", "a b c d")
+    resp = client.get("/search", params={"q": "   "})
+    assert resp.status_code == 422
+    assert resp.json()["error"]["code"] == "validation_error"

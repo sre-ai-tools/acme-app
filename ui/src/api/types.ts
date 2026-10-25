@@ -67,6 +67,5 @@ export interface ListFilters {
 }
 
 export interface SearchResult extends Incident {
-  owner_handle: string;
-  escalation_url: string | null;
+  owner_handle: string | null;
 }
