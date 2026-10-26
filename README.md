@@ -42,5 +42,6 @@ You need [Claude Code](https://claude.com/claude-code) and [uv](https://docs.ast
 
 ## See it in action
 
+- [Review results](docs/review-results.md): scores, what each review caught, Claude vs Qwen, the review loop.
 - [Merged PRs](https://github.com/sre-ai-tools/acme-app/pulls?q=is%3Apr+is%3Amerged): each has the panel's review comment.
 - [The staged PR](https://github.com/sre-ai-tools/acme-app/pull/7): five planted flaws, and what the reviews caught.
