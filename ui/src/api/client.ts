@@ -11,6 +11,7 @@ import type {
   IncidentPage,
   ListFilters,
   Postmortem,
+  SearchResult,
 } from "./types";
 
 /** An error response in the API's {"error": {"code", "message"}} shape, or a network failure. */
@@ -58,6 +59,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 const id = encodeURIComponent;
 
 export const api = {
+  search: (q: string): Promise<SearchResult[]> =>
+    request("GET", `/search?${new URLSearchParams({ q })}`),
   listIncidents(filters: ListFilters = {}): Promise<IncidentPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {

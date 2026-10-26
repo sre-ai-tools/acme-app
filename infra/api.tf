@@ -15,6 +15,7 @@ locals {
     "GET /incidents/{incident_id}/action-items",
     "POST /incidents/{incident_id}/action-items",
     "PATCH /action-items/{item_id}",
+    "GET /search",
   ])
 }
 

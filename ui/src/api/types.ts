@@ -65,3 +65,7 @@ export interface ListFilters {
   cursor?: string;
   limit?: number;
 }
+
+export interface SearchResult extends Incident {
+  owner_handle: string | null;
+}
