@@ -16,9 +16,9 @@ A demo app built to show [review-personas](https://github.com/sre-ai-tools/revie
 You need [Claude Code](https://claude.com/claude-code) and [uv](https://docs.astral.sh/uv/) (`brew install uv`).
 
 - Install the plugin once, in Claude Code:
-  - `/plugin marketplace add sre-ai-tools/review-personas#v1.1.0`
+  - `/plugin marketplace add sre-ai-tools/review-personas#v1.1.1`
   - `/plugin install prpanel@review-personas`
-  - `#v1.1.0` pins the release; without it you get whatever is on `main`.
+  - `#v1.1.1` pins the release; without it you get whatever is on `main`.
 - Review your branch: `/prpanel:review`
 - Or review, fix and review again: `/prpanel:review-loop`
   - It asks you which findings to fix, adds a test for each fix, and never commits.
